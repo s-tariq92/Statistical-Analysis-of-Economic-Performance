@@ -1,0 +1,291 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+#clean rent csv
+r=read.csv("rent.csv",
+               stringsAsFactors=FALSE,na.strings = "")
+
+
+library(dplyr)
+library(stringr)
+
+
+city=data.frame(str_split_fixed(r$city, ", ", 2))
+
+df=data.frame(cbind(city, r$rent))
+
+df2=df[,2:3]
+
+colnames(df2)=c("state", "rent")
+
+
+df3=summarise(group_by(df2,state),rent=mean(rent, na.rm=TRUE))
+
+write.csv(df3, file = "rent2.csv")
+
+```
+
+
+```{r}
+#clean snow csv
+
+s=read.csv("snow.csv",
+               stringsAsFactors=FALSE,na.strings = "")
+colnames(s)=c("snow", "state")
+
+
+library(dplyr)
+library(stringr)
+
+
+snow=data.frame(str_split_fixed(s$snow, " ", 2))
+state=data.frame(str_split_fixed(s$state, "/", 2))
+state2=data.frame(str_split_fixed(state$X1, "Â", 2))
+
+colnames(state2)=c("state", "NA")
+colnames(snow)=c("snow", "NA")
+
+
+df=data.frame(cbind(as.character(state2$state), as.character(snow$snow)))
+colnames(df)=c("state", "snow")
+
+
+write.csv(df, file = "snow.csv")
+
+```
+
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(locfit)
+library(MPV)
+library(olsrr)
+```
+
+```{r}
+df=read.csv("pdata.csv",
+                stringsAsFactors=FALSE,na.strings = "")
+
+#DATA CLEANING
+df=df[-51,]
+
+colnames(df)=c("State", "Population", "Density", "GDP", "GDP_Capita", "MinWage", "Bachelors", "Bachelors_HL", "Crime", "Crime_HL", "Income", "Error", "Rent", "Snow", "Snow_HL")
+
+df_1=df[,-c(8,10,12,14,15)]
+```
+
+
+```{r}
+#DATA DISTRIBUTION PLOTS
+
+par(mfrow=c(2, 4))
+
+x <- df_1$Rent
+h<-hist(x,
+breaks=10,
+col="lightsteelblue",
+xlab="Average Rent ($)",
+main="")
+mtext(paste0("skewness:", round(e1071::skewness(df_1$Rent),2)), side=3)
+xfit<-seq(min(x), max(x), length=40)
+yfit<-dnorm(xfit, mean=mean(x), sd=sd(x))
+yfit <- yfit*diff(h$mids[1:2])*length(x)
+lines(xfit, yfit, col="red", lwd=2)
+abline(v = mean(df_1$Rent), col="red", lwd=1, lty=2)
+box()
+
+x <- df_1$Income
+h<-hist(x,
+breaks=10,
+col="lightsteelblue",
+xlab="Median Income ($)",
+main="")
+mtext(paste0("skewness:", round(e1071::skewness(df_1$Income),2)), side=3)
+xfit<-seq(min(x), max(x), length=40)
+yfit<-dnorm(xfit, mean=mean(x), sd=sd(x))
+yfit <- yfit*diff(h$mids[1:2])*length(x)
+lines(xfit, yfit, col="red", lwd=2)
+abline(v = mean(df_1$Income), col="red", lwd=1, lty=2)
+box()
+
+
+x <- df_1$Density
+h<-hist(x,
+breaks=10,
+col="lightsteelblue",
+xlab="Population Density (per sq-mile)",
+main="")
+mtext(paste0("skewness:", round(e1071::skewness(df_1$Density),2)), side=3)
+xfit<-seq(min(x), max(x), length=40)
+yfit<-dnorm(xfit, mean=mean(x), sd=sd(x))
+yfit <- yfit*diff(h$mids[1:2])*length(x)
+lines(xfit, yfit, col="red", lwd=2)
+abline(v = mean(df_1$Density), col="red", lwd=1, lty=2)
+box()
+
+
+x <- df_1$GDP
+h<-hist(x,
+breaks=10,
+col="lightsteelblue",
+xlab="GDP (m$)",
+main="")
+mtext(paste0("skewness:", round(e1071::skewness(df_1$GDP),2)), side=3)
+xfit<-seq(min(x), max(x), length=40)
+yfit<-dnorm(xfit, mean=mean(x), sd=sd(x))
+yfit <- yfit*diff(h$mids[1:2])*length(x)
+lines(xfit, yfit, col="red", lwd=2)
+abline(v = mean(df_1$GDP), col="red", lwd=1, lty=2)
+box()
+
+
+x <- df_1$GDP_Capita
+h<-hist(x,
+breaks=10,
+col="lightsteelblue",
+xlab="Per Capita GDP ($)",
+main="")
+mtext(paste0("skewness:", round(e1071::skewness(df_1$GDP_Capita),2)), side=3)
+xfit<-seq(min(x), max(x), length=40)
+yfit<-dnorm(xfit, mean=mean(x), sd=sd(x))
+yfit <- yfit*diff(h$mids[1:2])*length(x)
+lines(xfit, yfit, col="red", lwd=2)
+abline(v = mean(df_1$GDP_Capita), col="red", lwd=1, lty=2)
+box()
+
+x <- df_1$MinWage
+h<-hist(x,
+breaks=10,
+col="lightsteelblue",
+xlab="Minimum Wage ($)",
+main="")
+mtext(paste0("skewness:", round(e1071::skewness(df_1$MinWage),2)), side=3)
+xfit<-seq(min(x), max(x), length=40)
+yfit<-dnorm(xfit, mean=mean(x), sd=sd(x))
+yfit <- yfit*diff(h$mids[1:2])*length(x)
+lines(xfit, yfit, col="red", lwd=2)
+abline(v = mean(df_1$MinWage), col="red", lwd=1, lty=2)
+box()
+
+x <- df_1$Bachelors
+h<-hist(x,
+breaks=10,
+col="lightsteelblue",
+xlab="Education (%)",
+main="")
+mtext(paste0("skewness:", round(e1071::skewness(df_1$Bachelors),2)), side=3)
+xfit<-seq(min(x), max(x), length=40)
+yfit<-dnorm(xfit, mean=mean(x), sd=sd(x))
+yfit <- yfit*diff(h$mids[1:2])*length(x)
+lines(xfit, yfit, col="red", lwd=2)
+abline(v = mean(df_1$Bachelors), col="red", lwd=1, lty=2)
+box()
+
+
+x <- df_1$Crime
+h<-hist(x,
+breaks=10,
+col="lightsteelblue",
+xlab="Crime Rate per 100,000 People",
+main="")
+mtext(paste0("skewness:", round(e1071::skewness(df_1$Crime),2)), side=3)
+xfit<-seq(min(x), max(x), length=40)
+yfit<-dnorm(xfit, mean=mean(x), sd=sd(x))
+yfit <- yfit*diff(h$mids[1:2])*length(x)
+lines(xfit, yfit, col="red", lwd=2)
+abline(v = mean(df_1$Bachelors), col="red", lwd=1, lty=2)
+box()
+
+
+#shapiro.test(df_1$Crime)
+#the p-value < 0.05 implying that the distribution of the data are significantly different from normal distribution. In other words, we cannot assume  normality.
+```
+
+
+
+```{r}
+#DATA BOXPLOTS
+
+par(mfrow=c(2, 4))
+
+
+boxplot(df_1$Rent, main="Rent", ylab="Avg Rent ($)", col = "lightsteelblue")
+
+boxplot(df_1$Income, main="Income", ylab="Median Income ($)", col = "lightsteelblue")
+
+boxplot(df_1$Density, main="Population Density", ylab="Population Density (per sq-mile", col = "lightsteelblue")
+
+boxplot(df_1$GDP, main="GDP", ylab="GDP (m$)", col = "lightsteelblue")
+
+boxplot(df_1$GDP_Capita, main="Per Capita GDP", ylab="Per Capita GDP ($)", col = "lightsteelblue")
+
+boxplot(df_1$MinWage, main="Minimum Wage", ylab="Minimum Wage ($)", col = "lightsteelblue")
+
+boxplot(df_1$Bachelors, main="Education", ylab="% pop with a Bachelors degree (%)", col = "lightsteelblue")
+
+boxplot(df_1$Crime, main="Crime Rate", ylab="Crime Rate per 100,000", col = "lightsteelblue")
+```
+
+
+
+
+```{r}
+#RELATION BETWEEN INCOME & RENT
+
+ggplot(df_1, aes(x=Income, y=Rent)) + 
+  geom_point(shape=18, color="blue")+
+  geom_smooth(method=lm,  linetype="dashed",
+             color="darkred", fill="lightsteelblue")+
+  xlab("Median Household Income ($)")+
+  ylab("Average 1-Bedroom Rent ($)")+
+  ggtitle("Income Vs Rent")
+
+cor(df_1$Rent, df_1$Income)
+#more than 0.5 so some linear relation
+```
+
+
+
+
+```{r}
+#CHOOSING MORE PREDICTOR VARIABLES
+
+
+cor(df_1[c("Income", "Density", "GDP","GDP_Capita", "Bachelors","Crime", "MinWage")])
+
+cor(df_1$Rent, df_1$Density)
+cor(df_1$Rent, df_1$GDP)
+cor(df_1$Rent, df_1$Bachelors)
+cor(df_1$Rent, df_1$Crime)
+
+par(mfrow=c(2, 2))
+plot(y=df_1$Rent, x=df_1$Density, main = "Rent ~ Population Density",
+     ylab = "Rent", xlab = "Population Density",
+     pch = 19, frame = FALSE)
+abline(lm(df_1$Rent~df_1$Density, data = df_1), col = "blue")
+
+plot(y=df_1$Rent, x=df_1$GDP, main="Rent ~ GDP (mil$)",
+     ylab = "Rent", xlab = "GDP (mil$)",
+     pch = 19, frame = FALSE)
+abline(lm(df_1$Rent~df_1$GDP, data = df_1), col = "blue")
+
+
+plot(y=df_1$Rent, x=df_1$Bachelors, main="Rent ~ % Bachelors Degree",
+     ylab = "Rent", xlab = "% Population with Bachelors Degree (%)",
+     pch = 19, frame = FALSE)
+abline(lm(df_1$Rent~df_1$Bachelors, data = df_1), col = "blue")
+
+plot(y=df_1$Rent, x=df_1$Crime, main="Rent ~ Crime Per 10,000",
+     ylab = "Rent", xlab = "Crime Per 10,000 People",
+     pch = 19, frame = FALSE)
+abline(lm(df_1$Rent~df_1$Crime, data = df_1), col = "blue")
+
+```
+```
+

@@ -1,0 +1,259 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+library(readr)
+library(dplyr)
+```
+
+```{r}
+files <- list.files(pattern = "*.csv", full.names = T)
+tbl <- sapply(files, read_csv, simplify=FALSE) %>% 
+bind_rows(.id = "id")
+```
+
+```{r}
+codes=as.data.frame(unique(tbl$ISO3))
+
+#write.csv(tbl, file = "all.csv")
+```
+
+
+```{r}
+#avg temp by country, per year, per month
+tbl2=tbl[,-1] 
+colnames(tbl2)=c("Temp_C", "Year", "Stat", "Country", "Country_Code")
+
+#avg temp by country, per year
+df1=summarise(group_by(tbl2,Country_Code, Country,Year),Temp=mean(Temp_C, na.rm=TRUE))
+
+#write.csv(df1, file = "yearly.csv")
+
+```
+
+
+```{r}
+#differences
+a=as.data.frame(diff(df1$Temp))
+b=setNames(data.frame(matrix(ncol = 1,  nrow=1)), c("diff"))
+b[1,1]=0
+colnames(a)=c("diff")
+difference=rbind(b,a)
+df1$difference=difference$diff
+
+df2=subset(df1, df1$Year != 1991) 
+
+#write.csv(df2, file = "yearly_difference.csv")
+```
+
+
+```{r}
+#average temp change rate by country
+df3=summarise(group_by(df2,Country_Code, Country),rate=mean(difference, na.rm=TRUE))
+
+#write.csv(df3, file = "temp.csv")
+```
+
+
+```{r}
+gdp=read.csv("gdp.csv",stringsAsFactors=FALSE,na.strings = "")
+
+library(data.table)
+
+dt1 <- data.table(df3, key = "Country_Code") 
+dt2 <- data.table(gdp, key = "Country_Code")
+
+df4=joined.dt1.dt.2 <- dt1[dt2]
+df5=subset(df4, !is.na(df4$rate))
+
+```
+
+
+```{r}
+pop=read.csv("pop.csv",stringsAsFactors=FALSE,na.strings = "")
+dt3 <- data.table(df5, key = "Country_Code") 
+dt4 <- data.table(pop, key = "Country_Code")
+
+df6=joined.dt3.dt.4 <- dt3[dt4]
+df7=subset(df6, !is.na(df6$rate))
+```
+
+```{r}
+co=read.csv("co2.csv",stringsAsFactors=FALSE,na.strings = "")
+
+dt5 <- data.table(df7, key = "Country_Code") 
+dt6 <- data.table(co, key = "Country_Code")
+
+df8=joined.dt5.dt.6 <- dt5[dt6]
+df9=subset(df8, !is.na(df8$Country))
+```
+
+
+```{r}
+df10=df9[,-c(4,6,8)]
+colnames(df10)=c("Country_Code", "Country", "Temp_Change", "GDP_Change", "Population_Change", "CO2_Change")
+
+head(df10)
+
+
+write.csv(df10, file = "countriesdata.csv")
+
+```
+
+
+
+
+
+
+
+```{r}
+df=read.csv("countriesdata.csv",
+               stringsAsFactors=FALSE,na.strings = "")
+
+head(df)
+
+df=df[,-c(1,6)]
+df=df[-c(69,162,60,146,160),]
+
+df$GDP_Change=as.numeric(df$GDP_Change)
+```
+
+
+```{r}
+#DATA DISTRIBUTION PLOTS
+
+
+x <- df$Temp_Change
+h<-hist(x,
+breaks=10,
+col="lightsteelblue",
+xlab="Avg Rate of Change in Temp (Celsius)",
+main="")
+mtext(paste0("skewness:", round(e1071::skewness(df$Temp_Change),2)), side=3)
+xfit<-seq(min(x), max(x), length=40)
+yfit<-dnorm(xfit, mean=mean(x), sd=sd(x))
+yfit <- yfit*diff(h$mids[1:2])*length(x)
+lines(xfit, yfit, col="red", lwd=2)
+abline(v = mean(df$Temp_Change), col="red", lwd=1, lty=2)
+abline(v = quantile(df$Temp_Change, c(.25, .75, 1)), col="black", lwd=1, lty=2)
+box()
+
+
+
+x <- df$GDP_Change
+h<-hist(x,
+breaks=10,
+col="lightsteelblue",
+xlab="Avg GDP Change (%)",
+main="")
+mtext(paste0("skewness:", round(e1071::skewness(df$GDP_Change),2)), side=3)
+xfit<-seq(min(x), max(x), length=40)
+yfit<-dnorm(xfit, mean=mean(x), sd=sd(x))
+yfit <- yfit*diff(h$mids[1:2])*length(x)
+lines(xfit, yfit, col="red", lwd=2)
+abline(v = mean(df$GDP_Change), col="red", lwd=1, lty=2)
+box()
+
+
+x <- df$CO2_Change
+h<-hist(x,
+breaks=10,
+col="lightsteelblue",
+xlab="Avg Rate of Change in CO2 Emissions (metric tonnes per capita)",
+main="")
+mtext(paste0("skewness:", round(e1071::skewness(df$CO2_Change),2)), side=3)
+xfit<-seq(min(x), max(x), length=40)
+yfit<-dnorm(xfit, mean=mean(x), sd=sd(x))
+yfit <- yfit*diff(h$mids[1:2])*length(x)
+lines(xfit, yfit, col="red", lwd=2)
+abline(v = mean(df$CO2_Change), col="red", lwd=1, lty=2)
+abline(v = quantile(df$CO2_Change, c(.25, .75, 1)), col="blue", lwd=2)
+box()
+
+
+```
+
+
+```{r}
+cor(df$GDP_Change,df$Temp_Change)
+cor(df$GDP_Change,df$CO2_Change)
+cor(df$Temp_Change,df$CO2_Change)
+
+```
+
+
+```{r}
+par(mfrow=c(1, 3))
+
+plot(y=df$GDP_Change, x=df$Temp_Change, main = "GDP Change ~ Temperature Change",
+     xlab = "Avg Rate of Change in Temp (Celsius)", ylab = "Avg GDP Change (%)",
+     pch = 19, frame = FALSE)
+abline(lm(df$GDP_Change~df$Temp_Change, data = df), col = "blue")
+
+
+
+plot(y=df$Temp_Change, x=df$CO2_Change, main = "Temp Change ~ CO2 Change",
+     ylab = "Avg Rate of Change in Temp (Celsius)", xlab = "Avg CO2 Change (Metric Tonnes per Capita)",
+     pch = 19, frame = FALSE)
+abline(lm(df$Temp_Change~df$CO2_Change, data = df), col = "blue")
+
+
+plot(y=df$GDP_Change, x=df$CO2_Change, main="GDP Change ~ CO2 Change",
+     xlab = "Avg CO2 Change (Metric Tonnes per Capita)", ylab = "Avg GDP Change (%)",
+     pch = 19, frame = FALSE)
+abline(lm(df$GDP_Change~df$CO2_Change, data = df), col = "blue")
+```
+
+
+
+```{r}
+par(mfrow=c(1, 3))
+
+boxplot(df$GDP_Change, main="GDP Change", ylab="Avg GDP Change (%)", col = "lightsteelblue")
+
+
+boxplot(df$Temp_Change, main="Temperature Change", ylab="Avg Rate of Change in Temp (Celsius)", col = "lightsteelblue")
+abline(h = quantile(df$Temp_Change, c(.25, .75, 1)), col="black", lwd=1, lty=2)
+
+
+boxplot(df$CO2_Change, main="CO2 Change", ylab="Avg Rate of Change in Co2 Emissions (metric tonnes per capita)", col = "lightsteelblue")
+abline(h = quantile(df$CO2_Change, c(.25, .75, 1)), col="black", lwd=1, lty=2)
+
+```
+
+
+```{r}
+quantile(df$Temp_Change, c(.25, .75, 1))
+quantile(df$CO2_Change, c(.25, .75, 1))
+
+df2=df
+
+df2$Temp_Factor=1
+df2$Temp_Factor=
+  ifelse(df$Temp_Change<quantile(df$Temp_Change, c(.251)),"L",
+  ifelse(df$Temp_Change>quantile(df$Temp_Change, c(.75)),"H","M"))
+
+df2$CO2_Factor=1
+df2$CO2_Factor=
+  ifelse(df$CO2_Change<quantile(df$CO2_Change, c(.251)),"L",
+  ifelse(df$CO2_Change>quantile(df$CO2_Change, c(.75)),"H","M"))
+
+```
+
+
+
+```{r}
+library(dplyr)
+df3=summarise(group_by(df2,Temp_Factor,CO2_Factor),Avg_GDP_Change=mean(GDP_Change, na.rm=TRUE))
+```
+
+```{r}
+#write.csv(df2, file = "factors.csv")
+#write.csv(df3, file = "table.csv")
+```
+
+
+

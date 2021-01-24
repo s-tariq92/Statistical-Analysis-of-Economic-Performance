@@ -1,0 +1,471 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(locfit)
+library(MPV)
+library(olsrr)
+```
+
+
+```{r}
+data=read.csv("pdata.csv",
+                stringsAsFactors=FALSE,na.strings = "")
+
+#DATA CLEANING
+data=data[-51,]
+
+colnames(data)=c("State", "Population", "Density", "GDP", "GDP_Capita", "MinWage", "Bachelors", "Bachelors_HL", "Crime", "Crime_HL", "Income", "Error", "Rent", "Snow", "Snow_HL")
+
+df=data[,-c(8,10,12,14,15)]
+```
+
+
+
+```{r}
+#SIMPLE LINEAR REGRESSION MODEL
+#Rent = y, Income = X : Effect of income on rent
+
+model1 = lm(df$Rent ~ df$Income )
+model1
+sum_model1=summary(model1)
+```
+
+
+
+```{r}
+#MULTIPLE LINEAR REGRESSION MODEL
+
+model2 = lm(df$Rent ~ df$Income+df$Density+df$GDP+df$Bachelors+df$Crime)
+model2
+sum_model2=summary(model2)
+```
+
+
+
+```{r}
+#MODEL STATISTICS FOR COMPARISON
+
+model1 = lm(df$Rent ~ df$Income+df$Density+df$GDP+df$Bachelors+df$Crime)
+model2 = lm(df$Rent ~ df$Income+df$Density+df$GDP+df$Bachelors)
+model3 = lm(df$Rent ~ df$Income+df$Density+df$GDP)
+model4 = lm(df$Rent ~ df$Income+df$Density)
+model5 = lm(df$Rent ~ df$Income)
+model6 = lm(df$Rent ~ df$Income+df$GDP)
+model7 = lm(df$Rent ~ df$Income+df$Bachelors)
+model8 = lm(df$Rent ~ df$Income+df$Crime)
+model9 = lm(df$Rent ~ df$Income+df$Density+df$Bachelors)
+model10 = lm(df$Rent ~ df$Income+df$Density+df$Crime)
+model11 = lm(df$Rent ~ df$Income+df$GDP+df$Bachelors)
+model12 = lm(df$Rent ~ df$Income+df$GDP+df$Crime)
+model13 = lm(df$Rent ~ df$Income+df$Density+df$GDP+df$Crime)
+model14 = lm(df$Rent ~ df$Income+df$Density+df$Bachelors+df$Crime)
+model15 = lm(df$Rent ~ df$Income+df$GDP+df$Bachelors+df$Crime)
+
+
+s1=summary(model1)
+s2=summary(model2)
+s3=summary(model3)
+s4=summary(model4)
+s5=summary(model5)
+s6=summary(model6)
+s7=summary(model7)
+s8=summary(model8)
+s9=summary(model9)
+s10=summary(model10)
+s11=summary(model11)
+s12=summary(model12)
+s13=summary(model13)
+s14=summary(model14)
+s15=summary(model15)
+
+
+
+
+dfmodels=setNames(data.frame(matrix(ncol = 11, nrow =1)), c("model","AIC", "BIC","PRESS","CP","r2","adjr2","MSE","F-Statistic","p-value","RSE"))
+
+dfmodels[1,1]="lm(df$Rent ~ df$Income+df$Density+df$GDP+df$Bachelors+df$Crime)"
+dfmodels[2,1]="lm(df$Rent ~ df$Income+df$Density+df$GDP+df$Bachelors)"
+dfmodels[3,1]="lm(df$Rent ~ df$Income+df$Density+df$GDP)"
+dfmodels[4,1]="lm(df$Rent ~ df$Income+df$Density)"
+dfmodels[5,1]="lm(df$Rent ~ df$Income)"
+dfmodels[6,1]="lm(df$Rent ~ df$Income+df$GDP)"
+dfmodels[7,1]="lm(df$Rent ~ df$Income+df$Bachelors)"
+dfmodels[8,1]="lm(df$Rent ~ df$Income+df$Crime)"
+dfmodels[9,1]="lm(df$Rent ~ df$Income+df$Density+df$Bachelors)"
+dfmodels[10,1]="lm(df$Rent ~ df$Income+df$Density+df$Crime)"
+dfmodels[11,1]="lm(df$Rent ~ df$Income+df$GDP+df$Bachelors)"
+dfmodels[12,1]="lm(df$Rent ~ df$Income+df$GDP+df$Crime)"
+dfmodels[13,1]="lm(df$Rent ~ df$Income+df$Density+df$GDP+df$Crime)"
+dfmodels[14,1]="lm(df$Rent ~ df$Income+df$Density+df$Bachelors+df$Crime)"
+dfmodels[15,1]="lm(df$Rent ~ df$Income+df$GDP+df$Bachelors+df$Crime)"
+
+
+dfmodels[1,2]=AIC(model1)
+dfmodels[1,3]=BIC(model1)
+dfmodels[1,4]=PRESS(model1)
+dfmodels[1,5]=ols_mallows_cp(model1, model1)
+dfmodels[1,6]=s1$r.squared
+dfmodels[1,7]=s1$adj.r.squared
+dfmodels[1,8]=mean(model1$residuals^2)
+dfmodels[1,9]= 11.47
+dfmodels[1,10]= 4.04e-07
+k1=length(model1$coefficients)-1
+SSE1=sum(model1$residuals**2)
+n1=length(model1$residuals)
+RSE1=sqrt(SSE1/(n1-(1+k1))) 
+dfmodels[1,11]=RSE1
+
+
+
+dfmodels[2,2]=AIC(model2)
+dfmodels[2,3]=BIC(model2)
+dfmodels[2,4]=PRESS(model2)
+dfmodels[2,5]=ols_mallows_cp(model2, model1)
+dfmodels[2,6]=s2$r.squared
+dfmodels[2,7]=s2$adj.r.squared
+dfmodels[2,8]=mean(model2$residuals^2)
+dfmodels[2,9]=14.26
+dfmodels[2,10]=1.358e-07
+k2=length(model2$coefficients)-1
+SSE2=sum(model2$residuals**2)
+n2=length(model2$residuals)
+RSE2=sqrt(SSE2/(n2-(1+k2))) 
+dfmodels[2,11]=RSE2  
+
+
+dfmodels[3,2]=AIC(model3)
+dfmodels[3,3]=BIC(model3)
+dfmodels[3,4]=PRESS(model3)
+dfmodels[3,5]=ols_mallows_cp(model3, model1)
+dfmodels[3,6]=s3$r.squared
+dfmodels[3,7]=s3$adj.r.squared
+dfmodels[3,8]=mean(model3$residuals^2)
+dfmodels[3,9]=18.83
+dfmodels[3,10]=4.142e-08
+k3=length(model3$coefficients)-1
+SSE3=sum(model3$residuals**2)
+n3=length(model3$residuals)
+RSE3=sqrt(SSE3/(n3-(1+k3))) 
+dfmodels[3,11]=RSE3
+
+
+dfmodels[4,2]=AIC(model4)
+dfmodels[4,3]=BIC(model4)
+dfmodels[4,4]=PRESS(model4)
+dfmodels[4,5]=ols_mallows_cp(model4, model1)
+dfmodels[4,6]=s4$r.squared
+dfmodels[4,7]=s4$adj.r.squared
+dfmodels[4,8]=mean(model4$residuals^2)
+dfmodels[4,9]=21.02
+dfmodels[4,10]=3.015e-07
+k4=length(model4$coefficients)-1
+SSE4=sum(model4$residuals**2)
+n4=length(model4$residuals)
+RSE4=sqrt(SSE4/(n4-(1+k4)))
+dfmodels[4,11]=RSE4
+
+
+dfmodels[5,2]=AIC(model5)
+dfmodels[5,3]=BIC(model5)
+dfmodels[5,4]=PRESS(model5)
+dfmodels[5,5]=ols_mallows_cp(model5, model1)
+dfmodels[5,6]=s5$r.squared
+dfmodels[5,7]=s5$adj.r.squared
+dfmodels[5,8]=mean(model5$residuals^2)
+dfmodels[5,9]=24.52
+dfmodels[5,10]=9.485e-06
+k5=length(model5$coefficients)-1
+SSE5=sum(model5$residuals**2)
+n5=length(model5$residuals)
+RSE5=sqrt(SSE2/(n5-(1+k5))) 
+dfmodels[5,11]=RSE5
+
+
+dfmodels[6,2]=AIC(model6)
+dfmodels[6,3]=BIC(model6)
+dfmodels[6,4]=PRESS(model6)
+dfmodels[6,5]=ols_mallows_cp(model6, model1)
+dfmodels[6,6]=s6$r.squared
+dfmodels[6,7]=s6$adj.r.squared
+dfmodels[6,8]=mean(model6$residuals^2)
+dfmodels[6,9]=19.44
+dfmodels[6,10]=7.05e-07
+k6=length(model6$coefficients)-1
+SSE6=sum(model6$residuals**2)
+n6=length(model6$residuals)
+RSE6=sqrt(SSE5/(n6-(1+k6))) 
+dfmodels[6,11]=RSE5
+
+
+dfmodels[7,2]=AIC(model7)
+dfmodels[7,3]=BIC(model7)
+dfmodels[7,4]=PRESS(model7)
+dfmodels[7,5]=ols_mallows_cp(model7, model1)
+dfmodels[7,6]=s7$r.squared
+dfmodels[7,7]=s7$adj.r.squared
+dfmodels[7,8]=mean(model7$residuals^2)
+dfmodels[7,9]=16.84
+dfmodels[7,10]=3.06e-06
+k7=length(model7$coefficients)-1
+SSE7=sum(model7$residuals**2)
+n7=length(model7$residuals)
+RSE7=sqrt(SSE7/(n7-(1+k7))) 
+dfmodels[7,11]=RSE7  
+
+
+dfmodels[8,2]=AIC(model8)
+dfmodels[8,3]=BIC(model8)
+dfmodels[8,4]=PRESS(model8)
+dfmodels[8,5]=ols_mallows_cp(model8, model1)
+dfmodels[8,6]=s8$r.squared
+dfmodels[8,7]=s8$adj.r.squared
+dfmodels[8,8]=mean(model8$residuals^2)
+dfmodels[8,9]=12.59
+dfmodels[8,10]=4.189e-05
+k8=length(model8$coefficients)-1
+SSE8=sum(model8$residuals**2)
+n8=length(model8$residuals)
+RSE8=sqrt(SSE8/(n8-(1+k8))) 
+dfmodels[8,11]=RSE8  
+
+
+dfmodels[9,2]=AIC(model9)
+dfmodels[9,3]=BIC(model9)
+dfmodels[9,4]=PRESS(model9)
+dfmodels[9,5]=ols_mallows_cp(model9, model1)
+dfmodels[9,6]=s9$r.squared
+dfmodels[9,7]=s9$adj.r.squared
+dfmodels[9,8]=mean(model9$residuals^2)
+dfmodels[9,9]=14.44
+dfmodels[9,10]=9.205e-07
+k9=length(model9$coefficients)-1
+SSE9=sum(model9$residuals**2)
+n9=length(model9$residuals)
+RSE9=sqrt(SSE9/(n9-(1+k9))) 
+dfmodels[9,11]=RSE9  
+
+
+dfmodels[10,2]=AIC(model10)
+dfmodels[10,3]=BIC(model10)
+dfmodels[10,4]=PRESS(model10)
+dfmodels[10,5]=ols_mallows_cp(model10, model1)
+dfmodels[10,6]=s10$r.squared
+dfmodels[10,7]=s10$adj.r.squared
+dfmodels[10,8]=mean(model10$residuals^2)
+dfmodels[10,9]=14.05
+dfmodels[10,10]=1.234e-06
+k10=length(model10$coefficients)-1
+SSE10=sum(model10$residuals**2)
+n10=length(model10$residuals)
+RSE10=sqrt(SSE10/(n10-(1+k10))) 
+dfmodels[10,11]=RSE10  
+
+
+dfmodels[11,2]=AIC(model11)
+dfmodels[11,3]=BIC(model11)
+dfmodels[11,4]=PRESS(model11)
+dfmodels[11,5]=ols_mallows_cp(model11, model1)
+dfmodels[11,6]=s11$r.squared
+dfmodels[11,7]=s11$adj.r.squared
+dfmodels[11,8]=mean(model11$residuals^2)
+dfmodels[11,9]=15.69
+dfmodels[11,10]=3.639e-07
+k11=length(model11$coefficients)-1
+SSE11=sum(model11$residuals**2)
+n11=length(model11$residuals)
+RSE11=sqrt(SSE2/(n11-(1+k11))) 
+dfmodels[11,11]=RSE11  
+
+
+dfmodels[12,2]=AIC(model12)
+dfmodels[12,3]=BIC(model12)
+dfmodels[12,4]=PRESS(model12)
+dfmodels[12,5]=ols_mallows_cp(model12, model1)
+dfmodels[12,6]=s12$r.squared
+dfmodels[12,7]=s12$adj.r.squared
+dfmodels[12,8]=mean(model12$residuals^2)
+dfmodels[12,9]=13.79
+dfmodels[12,10]=1.511e-06
+k12=length(model12$coefficients)-1
+SSE12=sum(model12$residuals**2)
+n12=length(model12$residuals)
+RSE12=sqrt(SSE12/(n12-(1+k12))) 
+dfmodels[12,11]=RSE12  
+
+
+
+dfmodels[13,2]=AIC(model13)
+dfmodels[13,3]=BIC(model13)
+dfmodels[13,4]=PRESS(model13)
+dfmodels[13,5]=ols_mallows_cp(model13, model1)
+dfmodels[13,6]=s13$r.squared
+dfmodels[13,7]=s13$adj.r.squared
+dfmodels[13,8]=mean(model13$residuals^2)
+dfmodels[13,9]=14.59
+dfmodels[13,10]=1.025e-07
+k13=length(model13$coefficients)-1
+SSE13=sum(model13$residuals**2)
+n13=length(model13$residuals)
+RSE13=sqrt(SSE13/(n13-(1+k13))) 
+dfmodels[13,11]=RSE13  
+
+dfmodels[14,2]=AIC(model14)
+dfmodels[14,3]=BIC(model14)
+dfmodels[14,4]=PRESS(model14)
+dfmodels[14,5]=ols_mallows_cp(model14, model1)
+dfmodels[14,6]=s14$r.squared
+dfmodels[14,7]=s14$adj.r.squared
+dfmodels[14,8]=mean(model14$residuals^2)
+dfmodels[14,9]=10.62
+dfmodels[14,10]=3.805e-06
+k14=length(model14$coefficients)-1
+SSE14=sum(model14$residuals**2)
+n14=length(model14$residuals)
+RSE14=sqrt(SSE14/(n14-(1+k14))) 
+dfmodels[14,11]=RSE14  
+
+  
+dfmodels[15,2]=AIC(model15)
+dfmodels[15,3]=BIC(model15)
+dfmodels[15,4]=PRESS(model15)
+dfmodels[15,5]=ols_mallows_cp(model15, model1)
+dfmodels[15,6]=s15$r.squared
+dfmodels[15,7]=s15$adj.r.squared
+dfmodels[15,8]=mean(model15$residuals^2)
+dfmodels[15,9]=11.57
+dfmodels[15,10]=1.522e-06
+k15=length(model15$coefficients)-1
+SSE15=sum(model15$residuals**2)
+n15=length(model15$residuals)
+RSE15=sqrt(SSE15/(n15-(1+k15))) 
+dfmodels[15,11]=RSE15  
+
+
+#write.csv(dfmodels, file = "models.csv")
+```
+
+
+
+```{r}
+#MULTIPLE LINEAR REGRESSION MODEL 3 ACCURACY OF PREDICTED
+
+dfcompare=setNames(data.frame(matrix(ncol = 10, nrow =2)), c("model", "SSE", "SSR","SST","s2","MSE","RMSE","MAE","MAPE","Chi-squared statistic"))
+
+dfcompare[1,1]="lm(Rent ~ Income+Density+GDP)"
+dfcompare[2,1]="lm(Rent ~ Income+Density+GDP+Crime)"
+
+
+#Predicted values of model 3
+df2pred=data.frame(df$Rent)
+df2pred$ModelRent=-111.9+(0.01496*df$Income)+(0.417*df$Density)+(0.0001982*df$GDP)
+
+colnames(df2pred)=c("Y_i", "Yhat_i")
+
+#SSE
+df2pred$o_e_2=(df2pred$Y_i-df2pred$Yhat_i)^2
+dfcompare[1,2]=sum(df2pred$o_e_2)
+
+
+#SSR
+mean_y2=mean(df2pred$Y_i)
+df2pred$e_m_2=(df2pred$Yhat_i-mean_y2)^2
+dfcompare[1,3]=sum(df2pred$e_m_2)
+
+
+#SST
+dfcompare[1,4] <- dfcompare[1,2] + dfcompare[1,3]
+
+
+#s2
+dfcompare[1,5]=dfcompare[1,2]/(50-3-1)
+
+
+#MSE
+dfcompare[1,6]=dfcompare[1,2]/(50-2)
+
+
+#RMSE
+dfcompare[1,7]=sqrt(dfcompare[1,2]/50)
+
+
+#MAE
+dfcompare[1,8] = mean(abs(df2pred$Y_i - df2pred$Yhat_i))
+
+
+#MAPE
+dfcompare[1,9]=mean(abs((df2pred$Y_i - df2pred$Yhat_i)/df2pred$Y_i))
+
+
+#Chi-squared statistic
+df2pred$o_e_2_e=((df2pred$Y_i-df2pred$Yhat_i)^2)/(df2pred$Yhat_i)
+dfcompare[1,10]=sum(df2pred$o_e_2_e)
+```
+
+
+
+
+```{r}
+#MULTIPLE LINEAR REGRESSION MODEL 13
+
+#Predicted values of model 13
+df3pred=data.frame(df$Rent)
+df3pred$ModelRent=44.7226479+(0.0139958*df$Income)+(0.4029308*df$Density)+(0.0002091*df$GDP)-(0.2669544*df$Crime)
+
+
+colnames(df3pred)=c("Y_i", "Yhat_i")
+
+#SSE
+df3pred$o_e_2=(df3pred$Y_i-df3pred$Yhat_i)^2
+dfcompare[2,2]=sum(df3pred$o_e_2)
+
+
+#SSR
+mean_y3=mean(df3pred$Y_i)
+df3pred$e_m_2=(df3pred$Yhat_i-mean_y3)^2
+dfcompare[2,3]=sum(df3pred$e_m_2)
+
+
+#SST
+dfcompare[2,4] <- dfcompare[2,2] + dfcompare[2,3]
+
+
+#s2
+dfcompare[2,5]=dfcompare[2,2]/(50-4-1)
+
+
+#MSE
+dfcompare[2,6]=dfcompare[2,2]/(50-2)
+
+
+#RMSE
+dfcompare[2,7]=sqrt(dfcompare[2,2]/50)
+
+
+#MAE
+dfcompare[2,8] = mean(abs(df3pred$Y_i - df3pred$Yhat_i))
+
+
+#MAPE
+dfcompare[2,9]=mean(abs((df3pred$Y_i - df3pred$Yhat_i)/df3pred$Y_i))
+
+
+#Chi-squared statistic
+df3pred$o_e_2_e=((df3pred$Y_i-df3pred$Yhat_i)^2)/(df3pred$Yhat_i)
+dfcompare[2,10]=sum(df3pred$o_e_2_e)
+
+
+#write.csv(dfcompare, file = "compare.csv")
+``` 
+
+
+
+```{r}
+#95% Confidence Interval
+```
+
+
